@@ -8,7 +8,7 @@ output: github_document
 First of all, we should include  the libraries we are using and prepare the dataset.
 ```{r init, message=FALSE}
 library(tidyverse)
-
+library(readxl)
 ```
 
 # Problem 1
@@ -28,3 +28,36 @@ nyc_transit = read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>%
   mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
 
 ```
+So far, the dataset(1868 rows, 19 columns) contains the information of all entries/exits from NYC transit, including the station info, the routes, the vending machine and ADA compliance. I cleaned the data under the instruction of the problem, and the data is not tidy.
+
+First, the datatype of some columns are not correct. For example, the "vending" and "ada" columns should be logical, and "entrance_type" variable should be a factor. Meanwhile, the "route" info is not arranged in a tidy way. Lastly, the information for the station, such as the position of the station and routes, is mixed with information for entrances, such as vending machine information. This introduced redundancy to the data that we don't need. 
+
+Based on the previous analysis, we can further tidy the data:
+
+```{r}
+nyc_transit =
+  mutate(nyc_transit,
+         vending = ifelse(vending == "YES", TRUE, FALSE),
+         entrance_type = factor(entrance_type))
+nyc_station = select(nyc_transit,-entry,-vending,-entrance_type) %>%
+  unique()
+nyc_station_distinct = distinct(nyc_station,line,station_name,.keep_all = TRUE)
+
+nyc_entrance = select(nyc_transit,line,station_name,entry,vending,entrance_type)
+
+sum(nyc_entrance$vending==FALSE & nyc_entrance$entry)/sum(nyc_entrance$vending==FALSE)
+
+nyc_station %>%
+  pivot_longer(
+    route1:route11,
+    names_to = "route_number",
+    values_to = "route"
+  )
+```
+
+
+
+
+
+
+
