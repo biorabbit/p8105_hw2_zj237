@@ -14,7 +14,9 @@ library(readxl)
 # Problem 1
 
 ```{r}
-nyc_transit = read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>%
+nyc_transit = read_csv(
+  "data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+  col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>%
   janitor::clean_names() %>%
   select(line,
          station_name,
@@ -32,7 +34,7 @@ So far, the dataset(1868 rows, 19 columns) contains the information of all entri
 
 First, the datatype of some columns are not correct. For example, the "vending" and "ada" columns should be logical, and "entrance_type" variable should be a factor. Meanwhile, the "route" info is not arranged in a tidy way. Lastly, the information for the station, such as the position of the station and routes, is mixed with information for entrances, such as vending machine information. This introduced redundancy to the data that we don't need. 
 
-Based on the previous analysis, we can further tidy the data:
+Based on the previous analysis, we can further tidy the data, and finish the problems:
 
 ```{r}
 nyc_transit =
@@ -47,13 +49,67 @@ nyc_entrance = select(nyc_transit,line,station_name,entry,vending,entrance_type)
 
 sum(nyc_entrance$vending==FALSE & nyc_entrance$entry)/sum(nyc_entrance$vending==FALSE)
 
-nyc_station %>%
+nyc_station_distinct =
   pivot_longer(
+    nyc_station_distinct,
     route1:route11,
     names_to = "route_number",
     values_to = "route"
-  )
+  ) %>%
+  drop_na(route)
 ```
+
+
+
+
+
+# Problem 2
+
+```{r}
+mr_trash_df =
+  read_excel(
+    "data/Trash Wheel Collection Data.xlsx",
+    sheet = "Mr. Trash Wheel",
+    range = "A2:N549"
+  ) %>%
+  janitor::clean_names() %>%
+  mutate(sports_balls = as.integer(sports_balls),
+         year = as.double(year),
+         trash_wheel = rep("Mr.",547))
+
+prof_trash_df = 
+  read_excel(
+    "data/Trash Wheel Collection Data.xlsx",
+    sheet = "Professor Trash Wheel",
+    range = "A2:M96"
+  ) %>%
+  janitor::clean_names() %>%
+  mutate(trash_wheel = rep("Professor", 94))
+  
+trash_df = full_join(mr_trash_df, prof_trash_df)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
