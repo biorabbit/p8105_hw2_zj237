@@ -30,7 +30,7 @@ nyc_transit = read_csv(
   mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
 
 ```
-So far, the dataset(1868 rows, 19 columns) contains the information of all entries/exits from NYC transit, including the station info, the routes, the vending machine and ADA compliance. I cleaned the data under the instruction of the problem, and the data is not tidy.
+So far, the dataset(1868 rows, 19 columns) contains the information of all entries/exits from NYC transit, including the station info, the routes, the vending machine and ADA compliance. I cleaned the data under the instruction of the problem. However, the data is still not tidy.
 
 First, the datatype of some columns are not correct. For example, the "vending" and "ada" columns should be logical, and "entrance_type" variable should be a factor. Meanwhile, the "route" info is not arranged in a tidy way. Lastly, the information for the station, such as the position of the station and routes, is mixed with information for entrances, such as vending machine information. This introduced redundancy to the data that we don't need. 
 
@@ -42,16 +42,22 @@ nyc_transit =
          vending = ifelse(vending == "YES", TRUE, FALSE),
          entrance_type = factor(entrance_type))
 nyc_station = select(nyc_transit,-entry,-vending,-entrance_type) %>%
-  unique()
-nyc_station_distinct = distinct(nyc_station,line,station_name,.keep_all = TRUE)
+  unique() %>%
+  distinct(line,station_name,.keep_all = TRUE)
 
 nyc_entrance = select(nyc_transit,line,station_name,entry,vending,entrance_type)
 
-sum(nyc_entrance$vending == FALSE & nyc_entrance$entry)/sum(nyc_entrance$vending == FALSE)
 
-nyc_station_distinct =
+
+```
+According to the data, using inline r, there are `r length(nyc_station$line)` different stations, and `r sum(nyc_station$ada)` stations are ada compliant. Meanwhile, `r round(sum(!nyc_entrance$vending & nyc_entrance$entry)/sum(!nyc_entrance$vending)*100,2)`% entrances without vending allow entrance.
+
+Then, we reformart based on the route variables,
+
+```{r}
+nyc_station =
   pivot_longer(
-    nyc_station_distinct,
+    nyc_station,
     route1:route11,
     names_to = "route_number",
     values_to = "route"
@@ -59,13 +65,15 @@ nyc_station_distinct =
   drop_na(route)
 ```
 
+Thus, `r sum(nyc_station$route == "A")` different stations serves the A train. Among these trains, `r sum(nyc_station$route == "A" & nyc_station$ada)` are ada compliant.
 
 
 
 
 # Problem 2
-
+First, clean the data based on the requirements,
 ```{r}
+rm(list = ls())
 mr_trash_df =
   read_excel(
     "data/Trash Wheel Collection Data.xlsx",
@@ -90,14 +98,18 @@ prof_trash_df =
     trash_wheel = rep("Professor", 94)
   )
   
-trash_df = full_join(mr_trash_df, prof_trash_df)
-
+trash_df = full_join(mr_trash_df, prof_trash_df)%>%
+  select(trash_wheel, everything())
+trash_df
 ```
+The `trash_df` dataframe contains the amount of items collected by different dumpstersm, categorized by trash wheel types (Mr. or Professor). There are `r length(trash_df$dumpster)` observations, each contains `r length(trash_df)` columns.
+
+For the cleaned data, the total weight collected by Professor Trash Wheel is `r sum(as.integer(trash_df$trash_wheel=="Professor")*trash_df$weight_tons)`, and the total number of sport balls collected by Mr. Trash Wheel is  `r sum(as.integer(trash_df$trash_wheel=="Mr.")*trash_df$sports_balls, na.rm=TRUE)`
 
 # Problem 3
 
 
-```{r}
+```{r, message = FALSE}
 rm(list = ls())
 
 pol_df = 
@@ -140,12 +152,16 @@ unemp_df =
 
 joined_df =
   full_join(pol_df, snp_df) %>%
-  full_join(unemp_df)
+  full_join(unemp_df) %>%
+  mutate(date = lubridate::make_date(year,match(month,month.abb))) %>%
+  select(year,month,date,everything())
+
+joined_df
 
 ```
+The `pol_df` contains information for the number of national politicians by political party as well as the party of the president in different months. The `snp_df` contains the Standard&Poor stock market index by month, and the `unemployment_df` is the percentage of unemployment rate in different months.
 
-
-
+After cleaning and merging the three datasets, the `joined_df` contains their information for `r length(joined_df$month)` months, ranging from `r joined_df$date[1]` to `r tail(joined_df$date,1)`. For each month, there are `r length(joined_df)` columns having the date, political, stock market and unemployment infomation with some missing values. 
 
 
 
