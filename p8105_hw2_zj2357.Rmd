@@ -47,7 +47,7 @@ nyc_station_distinct = distinct(nyc_station,line,station_name,.keep_all = TRUE)
 
 nyc_entrance = select(nyc_transit,line,station_name,entry,vending,entrance_type)
 
-sum(nyc_entrance$vending==FALSE & nyc_entrance$entry)/sum(nyc_entrance$vending==FALSE)
+sum(nyc_entrance$vending == FALSE & nyc_entrance$entry)/sum(nyc_entrance$vending == FALSE)
 
 nyc_station_distinct =
   pivot_longer(
@@ -73,9 +73,11 @@ mr_trash_df =
     range = "A2:N549"
   ) %>%
   janitor::clean_names() %>%
-  mutate(sports_balls = as.integer(sports_balls),
-         year = as.double(year),
-         trash_wheel = rep("Mr.",547))
+  mutate(
+    sports_balls = as.integer(sports_balls),
+    year = as.double(year),
+    trash_wheel = rep("Mr.",547)
+  )
 
 prof_trash_df = 
   read_excel(
@@ -84,13 +86,63 @@ prof_trash_df =
     range = "A2:M96"
   ) %>%
   janitor::clean_names() %>%
-  mutate(trash_wheel = rep("Professor", 94))
+  mutate(
+    trash_wheel = rep("Professor", 94)
+  )
   
 trash_df = full_join(mr_trash_df, prof_trash_df)
 
 ```
 
+# Problem 3
 
+
+```{r}
+rm(list = ls())
+
+pol_df = 
+  read_csv("data/fivethirtyeight_datasets/pols-month.csv") %>%
+  separate(
+    mon,
+    into = c("year","month","day"),
+    sep =  "-"
+  ) %>%
+  mutate(
+    president = ifelse(prez_dem == 1, "dem", "gop"),
+    year = as.double(year),
+    month = month.abb[as.integer(month)]
+  ) %>%
+  select(-prez_dem, -prez_gop, -day)
+
+snp_df = 
+  read_csv("data/fivethirtyeight_datasets/snp.csv") %>%
+  separate(
+    date,
+    into = c("month","day","year"),
+    sep =  "/"
+  ) %>%
+  mutate(
+    year = as.double(year),
+    year = ifelse(year > 30, year + 1900, year + 2000),
+    month = month.abb[as.integer(month)]
+  ) %>%
+  select(year, month, close)
+
+unemp_df = 
+  read_csv("data/fivethirtyeight_datasets/unemployment.csv") %>%
+  pivot_longer(
+    Jan:Dec,
+    names_to = "Month",
+    values_to = "Unemployment"
+  ) %>%
+  janitor::clean_names() %>%
+  na.omit()
+
+joined_df =
+  full_join(pol_df, snp_df) %>%
+  full_join(unemp_df)
+
+```
 
 
 
